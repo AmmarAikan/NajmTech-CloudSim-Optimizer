@@ -1,0 +1,11 @@
+6.2 “First-Fit order” قبل الإرسال للـBroker
+
+بعد إنشاء القائمة، يتم ترتيبها:
+
+r = MIPS * PEs + RAM
+
+
+ثم sort تصاعدي (الصغير أولاً).
+
+نقطة مهمّة: هذا فقط “ترتيب إرسال” للـBroker.
+أما “التوزيع الحقيقي” على Hosts فهو مسؤولية VmAllocationPolicySimple داخل الـDatacenter.

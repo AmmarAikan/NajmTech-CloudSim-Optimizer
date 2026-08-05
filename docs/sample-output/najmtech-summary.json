@@ -1,0 +1,16 @@
+{
+  "requestedVms": 9,
+  "createdVms": 9,
+  "failedVms": 0,
+  "finishedCloudlets": 20,
+  "successfulCloudlets": 20,
+  "successRatePercent": 100.000000,
+  "makespanSeconds": 73.389367,
+  "averageExecutionSeconds": 51.168486,
+  "averageWaitingSeconds": 0.000000,
+  "throughputCloudletsPerSecond": 0.272519,
+  "totalVmCostUsd": 155.375194,
+  "networkBandwidthMbps": 30.000000,
+  "networkLatencySeconds": 0.001600,
+  "vmsPerHost": {"0":4,"1":2,"2":2,"3":1}
+}

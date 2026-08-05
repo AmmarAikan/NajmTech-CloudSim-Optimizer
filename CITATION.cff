@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this simulation, please cite it using this metadata."
+title: "NajmTech CloudSim Optimizer"
+type: software
+authors:
+  - family-names: "Aikan"
+    given-names: "Ammar"
+repository-code: "https://github.com/AmmarAikan/NajmTech-CloudSim-Optimizer"
+version: "1.0.0"
+date-released: "2026-08-05"
+license: GPL-3.0-only
+keywords:
+  - cloud computing
+  - CloudSim Plus
+  - resource allocation
+  - virtual machines
+  - simulation

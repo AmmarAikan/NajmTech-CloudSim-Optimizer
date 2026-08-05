@@ -1,7 +1,26 @@
+# Maven and Java build output
+target/
+*.class
+*.jar
+
+# Generated simulation output
+results/*
+!results/.gitkeep
+
+# Legacy NetBeans build output
 build/
 dist/
 nbproject/private/
-*.class
-*.jar
+
+# IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+diagnostic-results/
 *.log
-lib/
+*.tmp
+*.bak

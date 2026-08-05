@@ -1,7 +1,5 @@
 # NajmTech CloudSim Optimizer
 
-[![Java CI](https://github.com/AmmarAikan/NajmTech-CloudSim-Optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/AmmarAikan/NajmTech-CloudSim-Optimizer/actions/workflows/ci.yml)
-
 A reproducible cloud resource-allocation simulation built with Java 17 and
 CloudSim Plus 8.5.7. It models heterogeneous infrastructure, real Best-Fit VM
 placement, Time-Shared workloads, network latency, and native VM cost analytics.

@@ -36,7 +36,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <cloudsimplus.version>8.5.7</cloudsimplus.version>
-        <junit.version>5.12.2</junit.version>
+        <junit.version>6.1.2</junit.version>
     </properties>
 
     <dependencies>

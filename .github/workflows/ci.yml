@@ -1,0 +1,40 @@
+name: Java CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Build and test
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Run simulation smoke test
+        run: java -jar target/najmtech-cloudsim-optimizer-1.0.0.jar --output-dir target/ci-results
+
+      - name: Upload runnable JAR and reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: najmtech-cloudsim-optimizer
+          path: |
+            target/najmtech-cloudsim-optimizer-1.0.0.jar
+            target/ci-results/
+          if-no-files-found: error

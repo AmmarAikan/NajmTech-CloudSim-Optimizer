@@ -38,19 +38,27 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Reproducible NajmTech cloud infrastructure simulation.
+ * محاكاة قابلة لإعادة الإنتاج للبنية السحابية المقترحة لشركة NajmTech Solutions.
  *
- * <p>The scenario uses actual Best-Fit VM placement, Time-Shared cloudlet
- * scheduling, a correctly dimensioned network link, and CloudSim Plus native
- * VM cost accounting.</p>
+ * <p>يمثل السيناريو مركز بيانات غير متجانس يستقبل مهام أجهزة ذكية وتحليلات
+ * فورية وتقارير دفعية. ويستخدم توزيع Best-Fit فعليًا، وجدولة Time-Shared،
+ * وربطًا شبكيًا بوحدات صحيحة، وحساب التكلفة الأصلي في CloudSim Plus.</p>
+ *
+ * <p>This class is intentionally kept as the single scenario entry point so a
+ * student can follow the complete simulation lifecycle from infrastructure
+ * creation to report generation.</p>
  */
 public final class NajmTechCloudSimulation {
 
+    // الحجم المتوقع للسيناريو؛ تستخدمه اختبارات الصحة لاكتشاف أي تنفيذ ناقص.
     public static final int REQUESTED_VM_COUNT = 9;
     public static final int CLOUDLET_COUNT = 20;
+
+    // CloudSim Plus يقبل عرض النطاق بالـMbps وزمن التأخير بالثواني.
     public static final double NETWORK_BANDWIDTH_MBPS = 30.0;
     public static final double NETWORK_LATENCY_SECONDS = 0.0016;
 
+    // نموذج تسعير NajmTech لموارد مركز البيانات.
     private static final double COST_PER_SECOND = 0.12;
     private static final double COST_PER_MEMORY = 0.000025;
     private static final double COST_PER_STORAGE = 0.0000015;
@@ -64,32 +72,40 @@ public final class NajmTechCloudSimulation {
         }
     }
 
-    /** Runs an isolated simulation and writes deterministic CSV and JSON reports. */
+    /**
+     * يشغّل محاكاة مستقلة ويكتب تقريري CSV وJSON بصيغة ثابتة لا تعتمد على لغة النظام.
+     */
     public SimulationReport run(final Path outputDirectory, final boolean verbose) throws IOException {
         Objects.requireNonNull(outputDirectory, "outputDirectory");
         Log.setLevel(verbose ? Level.WARN : Level.ERROR);
 
+        // 1) إنشاء محرك المحاكاة ومركز البيانات ووسيط المستخدم.
         final CloudSimPlus simulation = new CloudSimPlus();
         final Datacenter datacenter = createDatacenter(simulation);
         final DatacenterBroker broker = new DatacenterBrokerSimple(simulation, "NajmTech-Broker");
 
+        // 2) تطبيق الرابط الفعلي بين الوسيط ومركز البيانات: 30Mbps و1.6ms.
         final BriteNetworkTopology topology = new BriteNetworkTopology();
         simulation.setNetworkTopology(topology);
         topology.addLink(broker, datacenter, NETWORK_BANDWIDTH_MBPS, NETWORK_LATENCY_SECONDS);
 
+        // 3) إنشاء الآلات الافتراضية والمهام ثم ربط كل فئة بالموارد المناسبة.
         final List<Vm> requestedVms = createVms();
         final List<Cloudlet> requestedCloudlets = createCloudlets();
         configureResourceAwareCloudletMapping(broker, requestedVms);
         broker.submitVmList(requestedVms);
         broker.submitCloudletList(requestedCloudlets);
 
+        // 4) يبدأ CloudSim معالجة جميع الأحداث حتى انتهاء السيناريو.
         simulation.start();
 
+        // 5) جمع القوائم الفعلية بعد التنفيذ بدل افتراض نجاح الطلبات المرسلة.
         final List<Vm> createdVms = new ArrayList<>(broker.getVmCreatedList());
         final List<Vm> failedVms = new ArrayList<>(broker.getVmFailedList());
         final List<Cloudlet> finishedCloudlets = new ArrayList<>(broker.getCloudletFinishedList());
         finishedCloudlets.sort(Comparator.comparingLong(Cloudlet::getId));
 
+        // 6) استخدام VmCost من CloudSim Plus ثم توزيع تكلفة كل VM على مهامه.
         final Map<Vm, Double> vmCosts = calculateVmCosts(createdVms);
         final Map<Vm, Double> totalExecutionByVm = finishedCloudlets.stream()
             .collect(Collectors.groupingBy(Cloudlet::getVm, Collectors.summingDouble(Cloudlet::getTotalExecutionTime)));
@@ -98,6 +114,7 @@ public final class NajmTechCloudSimulation {
             .map(cloudlet -> toResult(cloudlet, vmCosts, totalExecutionByVm))
             .toList();
 
+        // 7) بناء الملخص وكتابة النتائج القابلة للمعالجة آليًا.
         final SimulationReport report = buildReport(requestedVms, createdVms, failedVms, rows, vmCosts);
         writeReports(outputDirectory, report);
         if (verbose) {
@@ -106,7 +123,12 @@ public final class NajmTechCloudSimulation {
         return report;
     }
 
+    /**
+     * ينشئ مركز بيانات NajmTech بأربعة Hosts متفاوتة في المعالجة والذاكرة والتخزين.
+     * يتيح عدم التجانس قياس قرار Best-Fit بدل توزيع متطابق لا يختبر السياسة فعليًا.
+     */
     private static Datacenter createDatacenter(final CloudSimPlus simulation) {
+        // مواصفات Hosts بالترتيب من العقدة الأصغر إلى الأكبر.
         final int[] peCounts = {4, 6, 8, 10};
         final int[] mipsPerPe = {1200, 1800, 2600, 3200};
         final long[] ramMb = {8192, 12288, 16384, 20480};
@@ -125,8 +147,10 @@ public final class NajmTechCloudSimulation {
             hosts.add(host);
         }
 
+        // هذه سياسة Best-Fit حقيقية، وليست مجرد ترتيب للـVMs قبل إرسالها.
         final Datacenter datacenter = new DatacenterSimple(simulation, hosts, new VmAllocationPolicyBestFit());
         datacenter.setName("NajmTech-Primary-Datacenter");
+        // تخزّن الأسعار داخل خصائص مركز البيانات ليحسب VmCost التكلفة الأصلية.
         datacenter.getCharacteristics()
             .setCostPerSecond(COST_PER_SECOND)
             .setCostPerMem(COST_PER_MEMORY)
@@ -135,6 +159,10 @@ public final class NajmTechCloudSimulation {
         return datacenter;
     }
 
+    /**
+     * ينشئ ثلاث فئات من الآلات الافتراضية، وثلاث نسخ من كل فئة (9 VMs إجمالًا).
+     * خُفّضت EdgeUltra إلى 2400 MIPS لكل PE حتى يمكن إنشاء النسخ الثلاث فعليًا.
+     */
     private static List<Vm> createVms() {
         final List<VmSpec> specs = List.of(
             new VmSpec("EdgeNano", 600, 1, 1024, 1500, 8000),
@@ -158,19 +186,26 @@ public final class NajmTechCloudSimulation {
         return vms;
     }
 
+    /**
+     * ينشئ عبء العمل الخاص بـNajmTech: 6 مهام IoT خفيفة، و7 مهام تحليل
+     * متوسطة، و7 مهام Batch ثقيلة.
+     */
     private static List<Cloudlet> createCloudlets() {
         final List<Cloudlet> cloudlets = new ArrayList<>();
-        final UtilizationModelFull utilization = new UtilizationModelFull();
+        final UtilizationModelFull cpuUtilization = new UtilizationModelFull();
         for (int id = 0; id < CLOUDLET_COUNT; id++) {
             final long length;
             final int pes;
             if (id < 6) {
+                // مهام خفيفة مثل قراءة حساسات IoT والطلبات البسيطة.
                 length = 12000L + id * 800L;
                 pes = 1;
             } else if (id < 13) {
+                // تحليلات فورية متوسطة تحتاج نواتين افتراضيتين.
                 length = 26000L + (id - 6L) * 1600L;
                 pes = 2;
             } else {
+                // تقارير دورية ومعالجة دفعية ثقيلة تحتاج أربع نوى.
                 length = 52000L + (id - 13L) * 2200L;
                 pes = 4;
             }
@@ -178,16 +213,18 @@ public final class NajmTechCloudSimulation {
             final Cloudlet cloudlet = new CloudletSimple(id, length, pes)
                 .setFileSize(400L + id * 45L)
                 .setOutputSize(280L + id * 30L)
-                .setUtilizationModelCpu(utilization);
+                // الاستهلاك الكامل للـCPU فقط؛ حجز RAM وBW كاملين لكل مهمة
+                // كان يعلّق المهام المتشاركة في النسخة القديمة.
+                .setUtilizationModelCpu(cpuUtilization);
             cloudlets.add(cloudlet);
         }
         return cloudlets;
     }
 
     /**
-     * Maps each cloudlet to a VM with the same PE count and balances cloudlets
-     * round-robin inside that VM tier. This prevents multi-PE cloudlets from
-     * being sent to an undersized VM by the broker's generic mapper.
+     * يربط كل Cloudlet بفئة VM تحمل عدد PEs المطابق، ثم يوازن المهام داخل
+     * الفئة بطريقة Round-Robin. يمنع ذلك إرسال مهمة متعددة الأنوية إلى VM
+     * أصغر من متطلباتها، وهو ما كان يؤدي إلى بقاء بعض المهام دون تنفيذ.
      */
     private static void configureResourceAwareCloudletMapping(
         final DatacenterBroker broker,
@@ -211,6 +248,7 @@ public final class NajmTechCloudSimulation {
         });
     }
 
+    /** يحسب التكلفة الكلية لكل VM تم إنشاؤها بالفعل داخل مركز البيانات. */
     private static Map<Vm, Double> calculateVmCosts(final List<Vm> createdVms) {
         final Map<Vm, Double> costs = new HashMap<>();
         for (final Vm vm : createdVms) {
@@ -219,6 +257,10 @@ public final class NajmTechCloudSimulation {
         return costs;
     }
 
+    /**
+     * يحوّل نتيجة Cloudlet إلى صف مستقل، ويوزع تكلفة الـVM عليها بنسبة زمن
+     * تنفيذها حتى يساوي مجموع الصفوف تكلفة VmCost الأصلية.
+     */
     private static CloudletResult toResult(
         final Cloudlet cloudlet,
         final Map<Vm, Double> vmCosts,
@@ -243,6 +285,7 @@ public final class NajmTechCloudSimulation {
         );
     }
 
+    /** يجمع مؤشرات الصحة والأداء والتكلفة وتوزيع الـVMs على الـHosts. */
     private static SimulationReport buildReport(
         final List<Vm> requestedVms,
         final List<Vm> createdVms,
@@ -279,12 +322,16 @@ public final class NajmTechCloudSimulation {
         );
     }
 
+    /** ينشئ مجلد النتائج عند الحاجة ثم يكتب التقرير التفصيلي والملخص. */
     private static void writeReports(final Path outputDirectory, final SimulationReport report) throws IOException {
         Files.createDirectories(outputDirectory);
         writeCsv(outputDirectory.resolve("najmtech-results.csv"), report.cloudlets());
         writeJson(outputDirectory.resolve("najmtech-summary.json"), report);
     }
 
+    /**
+     * يكتب صفًا لكل Cloudlet بترميز UTF-8 وأرقام Locale.ROOT المحمولة بين الأنظمة.
+     */
     private static void writeCsv(final Path output, final List<CloudletResult> rows) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(output, StandardCharsets.UTF_8)) {
             writer.write("cloudlet_id,vm_id,host_id,status,start_time_s,finish_time_s,execution_time_s,waiting_time_s,allocated_cost_usd");
@@ -301,6 +348,7 @@ public final class NajmTechCloudSimulation {
         }
     }
 
+    /** يكتب ملخص JSON مرتبًا وثابتًا لتسهيل المقارنة والتحليل الآلي. */
     private static void writeJson(final Path output, final SimulationReport report) throws IOException {
         final String hostMap = report.vmsPerHost().entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
@@ -353,6 +401,7 @@ public final class NajmTechCloudSimulation {
         System.out.println("Reports: " + outputDirectory.toAbsolutePath());
     }
 
+    /** يقبل مجلد النتائج الافتراضي أو الخيار الصريح {@code --output-dir}. */
     private static Path parseOutputDirectory(final String[] args) {
         if (args.length == 0) {
             return Path.of("results");
@@ -366,7 +415,7 @@ public final class NajmTechCloudSimulation {
     private record VmSpec(String name, long mips, long pes, long ramMb, long bandwidthMbps, long storageMb) {
     }
 
-    /** Immutable row written to the detailed CSV report. */
+    /** صف غير قابل للتغيير يمثل نتيجة مهمة واحدة داخل تقرير CSV. */
     public record CloudletResult(
         long cloudletId,
         long vmId,
@@ -383,7 +432,7 @@ public final class NajmTechCloudSimulation {
         }
     }
 
-    /** Immutable high-level simulation metrics used by the CLI and tests. */
+    /** ملخص غير قابل للتغيير تستخدمه الواجهة النصية واختبارات صحة المحاكاة. */
     public record SimulationReport(
         int requestedVms,
         int createdVms,

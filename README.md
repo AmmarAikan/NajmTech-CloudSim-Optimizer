@@ -1,5 +1,7 @@
 # NajmTech CloudSim Optimizer
 
+[![Java CI](https://github.com/AmmarAikan/NajmTech-CloudSim-Optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/AmmarAikan/NajmTech-CloudSim-Optimizer/actions/workflows/ci.yml)
+
 A reproducible cloud resource-allocation simulation built with Java 17 and
 CloudSim Plus 8.5.7. It models heterogeneous infrastructure, real Best-Fit VM
 placement, Time-Shared workloads, network latency, and native VM cost analytics.
@@ -61,12 +63,22 @@ Generated files:
   network, and VM-placement metrics.
 
 See [the architecture notes](docs/ARCHITECTURE.md) for modeling decisions and
-metric definitions. A verified example is available in
-[`docs/sample-output`](docs/sample-output/).
+metric definitions. Verified examples are available as
+[`docs/sample-results.csv`](docs/sample-results.csv) and
+[`docs/sample-summary.json`](docs/sample-summary.json).
+
+## Project layout
+
+- `src/` — application source and automated tests.
+- `docs/` — architecture, sample output, course report, and presentation.
+- `.github/` — GitHub Actions and monthly dependency updates.
+
+Build output (`target/`) and generated reports (`results/`) are created locally
+when needed and are intentionally not stored in Git.
 
 ## Project documents
 
-The original course report and presentation are preserved in `docs/course/`.
+The original course report and presentation are preserved directly in `docs/`.
 
 ## License
 

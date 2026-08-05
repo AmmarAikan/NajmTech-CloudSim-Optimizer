@@ -4,8 +4,7 @@ target/
 *.jar
 
 # Generated simulation output
-results/*
-!results/.gitkeep
+results/
 
 # Legacy NetBeans build output
 build/

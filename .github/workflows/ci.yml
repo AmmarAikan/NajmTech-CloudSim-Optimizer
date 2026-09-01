@@ -31,7 +31,7 @@ jobs:
         run: java -jar target/najmtech-cloudsim-optimizer-1.0.0.jar --output-dir target/ci-results
 
       - name: Upload runnable JAR and reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: najmtech-cloudsim-optimizer
           path: |
